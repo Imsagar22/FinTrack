@@ -34,7 +34,8 @@ import {
   Unlock,
   Users,
   Database,
-  ShieldAlert
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 
 import { Transaction, TransactionType, CategoryBudget, PaymentMethod } from './types';
@@ -63,6 +64,8 @@ export default function App() {
   // --- Profile Menu & Admin Modal States ---
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [googleAuthError, setGoogleAuthError] = useState<string | null>(null);
+  const [showGoogleTroubleshooter, setShowGoogleTroubleshooter] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Handle clicking outside of profile dropdown to close it
@@ -500,16 +503,25 @@ export default function App() {
 
   const handleGoogleSignIn = async () => {
     setIsAuthLoading(true);
+    setGoogleAuthError(null);
     try {
       const user = await signInWithGoogle();
       triggerToast(`Authenticated successfully as ${user.email || 'Google User'}!`, 'success');
       setShowAuthModal(false);
     } catch (err: any) {
       console.error(err);
+      const errorCode = err.code || 'unknown';
+      setGoogleAuthError(errorCode);
+      setShowGoogleTroubleshooter(true); // Automatically expand the troubleshooting guide on error
+      
       if (err.code === 'auth/popup-blocked') {
         triggerToast('Sign-In popup was blocked. Please allow popups or Open the App in a New Tab!', 'error');
       } else if (err.code === 'auth/operation-not-supported-in-this-environment' || err.message?.includes('iframe')) {
         triggerToast('Google popup is restricted inside the preview. Please click "Open in new tab" at the top-right to sign in with Google!', 'error');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        triggerToast('Google sign-in is disabled in your Firebase console under Authentication > Sign-in method!', 'error');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        triggerToast('This domain is not in your Firebase Authorized Domains list!', 'error');
       } else {
         triggerToast(`Google Sign-In Error: ${err.message}`, 'error');
       }
@@ -1961,6 +1973,81 @@ export default function App() {
                 </svg>
                 <span>Google Sign In</span>
               </button>
+
+              {/* Google Sign-In Troubleshooting Guide */}
+              <div className="mt-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleTroubleshooter(!showGoogleTroubleshooter)}
+                  className="w-full flex items-center justify-between font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors cursor-pointer text-left focus:outline-none"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span>Need help with Google Sign-In?</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {showGoogleTroubleshooter ? 'Hide' : 'Setup Steps'}
+                  </span>
+                </button>
+                
+                {showGoogleTroubleshooter && (
+                  <div className="mt-3 space-y-3.5 text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800/60 pt-3">
+                    {googleAuthError && (
+                      <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 font-medium text-[11px]">
+                        <strong>Detected Error Code:</strong> <code className="bg-white/60 dark:bg-black/30 px-1 py-0.5 rounded font-mono">{googleAuthError}</code>
+                        {googleAuthError === 'auth/operation-not-allowed' && (
+                          <p className="mt-1.5 font-normal">Google Sign-In is disabled in your Firebase console. Please complete Step 1 below to enable it.</p>
+                        )}
+                        {googleAuthError === 'auth/unauthorized-domain' && (
+                          <p className="mt-1.5 font-normal">This preview hostname is not authorized in your Firebase console. Please complete Step 2 below.</p>
+                        )}
+                        {googleAuthError === 'auth/popup-closed-by-user' && (
+                          <p className="mt-1.5 font-normal">The sign-in popup was closed before completion. Please try again and complete the sign-in flow.</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <p className="font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                        Complete these 3 steps to configure Google Sign-In:
+                      </p>
+                      
+                      <ol className="list-decimal list-inside space-y-2.5 font-normal text-[11px] leading-relaxed">
+                        <li>
+                          <strong>Enable Google Sign-In:</strong> Go to the{' '}
+                          <a
+                            href="https://console.firebase.google.com/project/isentropic-premise-lxhgq/authentication/providers"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 underline font-bold hover:text-indigo-700 dark:hover:text-indigo-300"
+                          >
+                            Firebase Auth Providers
+                          </a>{' '}
+                          tab, click <strong>Add new provider</strong>, select <strong>Google</strong>, enable it, choose your support email, and click <strong>Save</strong>.
+                        </li>
+                        <li>
+                          <strong>Authorize this Domain:</strong> Go to the{' '}
+                          <a
+                            href="https://console.firebase.google.com/project/isentropic-premise-lxhgq/authentication/settings"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 underline font-bold hover:text-indigo-700 dark:hover:text-indigo-300"
+                          >
+                            Firebase Auth Settings
+                          </a>{' '}
+                          page, click <strong>Authorized domains</strong>, click <strong>Add domain</strong>, and add:
+                          <div className="mt-1 font-mono bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded text-indigo-600 dark:text-indigo-400 select-all inline-block">
+                            {window.location.hostname}
+                          </div>
+                        </li>
+                        <li>
+                          <strong>Authentication inside Iframe:</strong> Browser security rules often block popups and sign-in cookies inside preview iframes. Click the <strong>"Open in new tab"</strong> button at the top-right of your AI Studio workspace to load the app outside the iframe, and try logging in there!
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-400 font-medium">
                 {authMode === 'signup' ? (
