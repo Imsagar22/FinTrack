@@ -32,6 +32,7 @@ export type PaymentMethod = 'Cash' | 'Card' | 'UPI' | 'Bank Transfer';
 
 export interface Transaction {
   id: string;
+  userId?: string;
   date: string; // YYYY-MM-DD
   amount: number;
   type: TransactionType;
@@ -43,4 +44,5 @@ export interface Transaction {
 export interface CategoryBudget {
   category: string;
   limit: number;
+  userId?: string;
 }
