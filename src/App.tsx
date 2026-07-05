@@ -131,11 +131,23 @@ export default function App() {
       if (user) {
         // Realtime user role check
         const userDocRef = doc(db, 'users', user.uid);
-        const unsubscribeUser = onSnapshot(userDocRef, (snap) => {
-          if (snap.exists()) {
-            setUserRole(snap.data().role || 'user');
+        const unsubscribeUser = onSnapshot(userDocRef, async (snap) => {
+          if (user.email === 'sagarmailstop@gmail.com') {
+            setUserRole('admin');
+            // Ensure their Firestore document has the admin role persisted
+            if (!snap.exists() || snap.data().role !== 'admin') {
+              try {
+                await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+              } catch (e) {
+                console.error('Failed to auto-set admin role in Firestore', e);
+              }
+            }
           } else {
-            setUserRole(user.email === 'sagarmailstop@gmail.com' ? 'admin' : 'user');
+            if (snap.exists()) {
+              setUserRole(snap.data().role || 'user');
+            } else {
+              setUserRole('user');
+            }
           }
         });
 
