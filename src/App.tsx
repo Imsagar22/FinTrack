@@ -1922,6 +1922,22 @@ export default function App() {
                 </p>
               </div>
 
+              {/* Seamless Auth Notice Banner */}
+              <div className="mb-5 p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-100/60 dark:border-indigo-900/30 text-xs text-indigo-800 dark:text-indigo-300">
+                <div className="flex gap-2">
+                  <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold">Recommendation for Google Sign-In:</p>
+                    <p className="leading-relaxed text-[11px] text-slate-600 dark:text-slate-400">
+                      Google OAuth requires owner level access to configure domains. Since this is a sandboxed preview environment, <strong>please sign up/in using standard Email & Password above</strong>.
+                    </p>
+                    <p className="leading-relaxed text-[11px] text-slate-600 dark:text-slate-400">
+                      Standard Email authentication works instantly, connects to your Firestore, and automatically sets <strong className="text-indigo-600 dark:text-indigo-400">sagarmailstop@gmail.com</strong> as the <strong>Project Owner & Admin</strong>!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
